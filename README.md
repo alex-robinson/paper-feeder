@@ -13,12 +13,47 @@ command) to refine the lexicon. An optional LLM-rerank seam exists, off by defau
 (e.g. your GitHub Pages site), holding your own config, state, and output. Anyone
 can run their own.
 
-## Host your own (quick start)
+## Host your own — step by step
 
-Copy [`examples/consumer/`](examples/consumer/) into the root of your GitHub
-Pages repo, edit `config/`, enable Pages, and run the workflow. See
-[`examples/consumer/README.md`](examples/consumer/README.md) for the steps. Your
-digest lands at `<site>/feed/` with an RSS feed at `<site>/feed/feed.xml`.
+You need a GitHub repo with GitHub Pages (a `you.github.io` site, or any repo
+with Pages on). No API key, no secrets, no server.
+
+**1. Drop the template into your Pages repo root.** From the root of that repo:
+
+```sh
+git clone --depth 1 https://github.com/alex-robinson/paper-feeder /tmp/pf
+cp -R /tmp/pf/examples/consumer/. .    # copies config/, .github/, .claude/, seeds/
+```
+
+**2. Edit `config/sources.yaml`** — your feeds and OpenAlex queries, your polite-pool
+`mailto`, and set `link:` to your digest URL (`https://you.github.io/feed/`).
+
+**3. Edit `config/scoring.yaml`** — the weighted keyword lexicon. Start from the
+sample and tune it, or run `/compile-lexicon` (see below) against your library.
+
+**4. If your site uses Jekyll** (any `you.github.io` user site does), open
+`.github/workflows/scan.yml` and change `data: data` to `data: .paper-feeder` —
+a dot-dir Jekyll won't publish. (Plain static site? Leave it as `data`.)
+
+**5. Commit and push:**
+
+```sh
+git add config .github .claude seeds && git commit -m "Add paper-feeder" && git push
+```
+
+**6. Enable GitHub Pages** — repo **Settings → Pages**, source = your default
+branch (user `you.github.io` sites are already on). 
+
+**7. Run it once** — **Actions → `scan` → "Run workflow"**. It fetches, scores,
+and commits `feed/index.html` + `feed/feed.xml`. After that it runs daily.
+
+**8. Read it** — your digest is at **`https://you.github.io/feed/`**; subscribe
+Feedly to **`https://you.github.io/feed/feed.xml`**. (Optionally add a link to
+`/feed/` in your site nav.)
+
+That's it — steps 2–4 are the only edits, and step 7 onward is automatic.
+See [`examples/consumer/README.md`](examples/consumer/README.md) for the same in
+brief.
 
 ## Install / run
 
