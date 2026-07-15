@@ -1,0 +1,89 @@
+# Weighted keyword lexicon — the heart of the filter.
+#
+# Compile/refine this occasionally (interactively, with Claude) from your
+# BibTeX library + interests. It is pure config: the daily job never calls an
+# LLM. See README "Refining the lexicon".
+#
+# Each include entry is either:
+#   {term: "ice sheet", weight: 3}      literal phrase; word-boundary match,
+#                                        internal spaces also match hyphens
+#   {pattern: "ice[- ]sheets?", weight: 3, label: "ice sheet"}   raw regex
+#
+# Score per paper = sum over matching entries of
+#   weight * title_boost   (term in title)  +  weight   (term in abstract).
+# Papers scoring >= publish_min_score go in the digest; the rest feed
+# serendipity. An `exclude` match vetoes a paper outright — use it to kill
+# known false positives.
+
+title_boost: 2.0
+publish_min_score: 3.0
+serendipity_count: 3
+
+include:
+  # --- core: ice-sheet dynamics & stability -------------------------------
+  - {term: "ice sheet", weight: 3}
+  - {pattern: "ice[- ]sheet model(l)?ing", weight: 5, label: "ice-sheet modelling"}
+  - {term: "ice stream", weight: 4}
+  - {term: "ice shelf", weight: 4}
+  - {term: "grounding line", weight: 4}
+  - {term: "marine ice sheet instability", weight: 5}
+  - {term: "subglacial", weight: 4}
+  - {term: "basal melt", weight: 3}
+  - {term: "ice dynamics", weight: 3}
+  - {term: "Antarctic", weight: 2}
+  - {term: "Antarctica", weight: 2}
+  - {term: "Greenland", weight: 2}
+  - {term: "West Antarctic", weight: 3}
+
+  # --- tipping points / abrupt change -------------------------------------
+  - {term: "tipping point", weight: 4}
+  - {term: "tipping element", weight: 5}
+  - {term: "abrupt change", weight: 3}
+  - {term: "hysteresis", weight: 3}
+  - {term: "bifurcation", weight: 2}
+
+  # --- paleoclimate / data assimilation -----------------------------------
+  - {pattern: "pal(a)?eoclimat(e|ic)", weight: 3, label: "paleoclimate"}
+  - {term: "deglaciation", weight: 4}
+  - {term: "last glacial maximum", weight: 4}
+  - {term: "interglacial", weight: 3}
+  - {term: "proxy reconstruction", weight: 3}
+  - {term: "data assimilation", weight: 3}
+  - {term: "ice core", weight: 3}
+
+  # --- glacial isostatic adjustment ---------------------------------------
+  - {term: "glacial isostatic adjustment", weight: 5}
+  - {pattern: "\\bGIA\\b", weight: 4, label: "GIA"}
+  - {term: "sea level", weight: 2}
+  - {term: "sea-level rise", weight: 3}
+  - {term: "solid earth", weight: 3}
+  - {term: "mantle viscosity", weight: 3}
+
+  # --- Earth system / long-timescale modeling -----------------------------
+  - {term: "Earth system model", weight: 4}
+  - {term: "coupled climate model", weight: 3}
+  - {term: "model intercomparison", weight: 3}
+  - {term: "CMIP", weight: 2}
+  - {term: "climate dynamics", weight: 2}
+
+  # --- specific ice-sheet / GIA model names -------------------------------
+  - {pattern: "\\bYelmo\\b", weight: 5, label: "Yelmo"}
+  - {pattern: "\\bPISM\\b", weight: 5, label: "PISM"}
+  - {term: "Elmer/Ice", weight: 5}
+  - {pattern: "\\bCISM\\b", weight: 4, label: "CISM"}
+
+exclude:
+  # kill known polysemy false positives (word-boundary matched)
+  - "Georgia"
+  - "gene"
+  - "genetic"
+  - "protein"
+  - "tumor"
+  - "clinical trial"
+  - "stock market"
+
+# --- optional LLM rerank seam (off by default; see src/paper_feeder/rerank.py) ---
+llm_rerank:
+  enabled: false
+  model: claude-haiku-4-5
+  top_n: 20

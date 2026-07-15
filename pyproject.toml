@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paper-feeder"
+version = "0.1.0"
+description = "Keyword-scored digest of new papers from RSS feeds + OpenAlex/Crossref, published as a static HTML page and RSS feed."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "feedparser>=6.0",
+    "requests>=2.31",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+llm = ["anthropic>=0.40"]  # only needed if the optional LLM rerank seam is enabled
+
+[project.scripts]
+paper-feeder = "paper_feeder.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
