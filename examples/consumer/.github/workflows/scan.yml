@@ -20,7 +20,7 @@ jobs:
       - uses: alex-robinson/paper-feeder@v0.1.0
         with:
           config: config
-          data: data
+          data: data          # on a Jekyll site, use a dot-dir (e.g. .paper-feeder) so state isn't published
           docs: feed          # published subdir -> <site>/feed/ and <site>/feed/feed.xml
 
       - name: Commit results
@@ -28,7 +28,7 @@ jobs:
           git config user.name  "paper-feeder"
           git config user.email "actions@github.com"
           git add feed/ data/
-          git diff --staged --quiet || git commit -m "scan: $(date -I) [skip ci]"
+          git diff --staged --quiet || git commit -m "scan: $(date -I)"
           git push
 
 # --- Alternative without the Action (plain pip install) ---
