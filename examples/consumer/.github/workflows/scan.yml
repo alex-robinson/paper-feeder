@@ -1,0 +1,39 @@
+# Copy this into YOUR site repo at .github/workflows/scan.yml.
+# It runs the paper-feeder digest daily and commits the result back.
+name: scan
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 06:00 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # One step does the work: install paper-feeder, score, write feed/.
+      - uses: alex-robinson/paper-feeder@v0.1.0
+        with:
+          config: config
+          data: data
+          docs: feed          # published subdir -> <site>/feed/ and <site>/feed/feed.xml
+
+      - name: Commit results
+        run: |
+          git config user.name  "paper-feeder"
+          git config user.email "actions@github.com"
+          git add feed/ data/
+          git diff --staged --quiet || git commit -m "scan: $(date -I) [skip ci]"
+          git push
+
+# --- Alternative without the Action (plain pip install) ---
+# Replace the `uses: alex-robinson/paper-feeder@v0.1.0` step with:
+#   - uses: actions/setup-python@v5
+#     with: { python-version: "3.12", cache: pip }
+#   - run: pip install "git+https://github.com/alex-robinson/paper-feeder@v0.1.0"
+#   - run: paper-feeder --config config --data data --docs feed

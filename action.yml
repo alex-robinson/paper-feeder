@@ -1,0 +1,36 @@
+name: paper-feeder
+description: Score new papers against a keyword lexicon and write an HTML digest + RSS feed.
+branding:
+  icon: rss
+  color: green
+
+inputs:
+  config:
+    description: Directory holding sources.yaml and scoring.yaml
+    default: config
+  data:
+    description: Directory for committed state (seen.json, window.json)
+    default: data
+  docs:
+    description: Output directory for index.html and feed.xml
+    default: docs
+  python-version:
+    description: Python version to run under
+    default: "3.12"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip
+    # github.action_path is this action repo's checkout — install the package from it.
+    - shell: bash
+      run: pip install "${{ github.action_path }}"
+    - shell: bash
+      run: >
+        paper-feeder
+        --config "${{ inputs.config }}"
+        --data "${{ inputs.data }}"
+        --docs "${{ inputs.docs }}"

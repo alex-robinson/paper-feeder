@@ -1,13 +1,44 @@
 # paper-feeder
 
-A daily job that ingests journal RSS feeds + OpenAlex/Crossref queries,
-deduplicates by DOI, scores each paper against a **weighted keyword lexicon**,
-and publishes a static HTML digest + RSS feed to GitHub Pages.
+A small, installable package that turns journal RSS feeds + OpenAlex/Crossref
+queries into a **keyword-scored digest**, published as a static HTML page and an
+RSS feed. Point it at your feeds and a weighted keyword lexicon; it fetches,
+deduplicates by DOI, scores, and writes `index.html` + `feed.xml`.
 
 The daily job is **pure Python — no LLM, no API key**. An LLM is used only
-occasionally and interactively (via Claude Code) to compile and refine the
-lexicon in [`config/scoring.yaml`](config/scoring.yaml). An optional LLM-rerank
-seam exists but is off by default.
+occasionally and interactively (via the bundled `/compile-lexicon` Claude Code
+command) to refine the lexicon. An optional LLM-rerank seam exists, off by default.
+
+**paper-feeder doesn't host anything itself** — you host it in your own repo
+(e.g. your GitHub Pages site), holding your own config, state, and output. Anyone
+can run their own.
+
+## Host your own (quick start)
+
+Copy [`examples/consumer/`](examples/consumer/) into the root of your GitHub
+Pages repo, edit `config/`, enable Pages, and run the workflow. See
+[`examples/consumer/README.md`](examples/consumer/README.md) for the steps. Your
+digest lands at `<site>/feed/` with an RSS feed at `<site>/feed/feed.xml`.
+
+## Install / run
+
+**As a GitHub Action** (one step in your workflow):
+
+```yaml
+- uses: actions/checkout@v4
+- uses: alex-robinson/paper-feeder@v0.1.0
+  with: { config: config, data: data, docs: feed }
+```
+
+**As a package** (CLI or import):
+
+```sh
+pip install "git+https://github.com/alex-robinson/paper-feeder@v0.1.0"
+paper-feeder --config config --data data --docs feed
+```
+
+Both read `config/{sources,scoring}.yaml`, keep state in `--data`, and write
+`index.html` + `feed.xml` to `--docs`.
 
 ## Pipeline
 
@@ -17,43 +48,21 @@ fetch (RSS + OpenAlex + Crossref)
   → dedupe (by DOI, else normalized-title hash)
   → filter already-seen (data/seen.json)
   → score (weighted keyword lexicon, title-boosted; exclusions veto)
-  → render (docs/index.html + docs/feed.xml)
+  → render (index.html rolling window + feed.xml)
 ```
 
-## Layout
+## Reading model: seen vs. unread
 
-```
-config/sources.yaml    # RSS feeds + OpenAlex/Crossref queries
-config/scoring.yaml    # the weighted lexicon (the heart of the filter)
-src/paper_feeder/      # the package
-  fetch/               # rss, openalex, crossref (each logs+skips on failure)
-  score.py             # keyword scorer
-  rerank.py            # optional LLM rerank seam (off by default)
-  render.py            # HTML + RSS (stdlib only)
-  window.py            # rolling display-window record store
-  main.py              # orchestrator
-data/seen.json         # dedup ledger: DOI/title -> first-seen date
-data/window.json       # scored records currently shown on the page
-docs/                  # GitHub Pages root (index.html, feed.xml)
-```
+- **Emitted** — the scanner has surfaced a paper before. Tracked by `seen.json`
+  (keyed by DOI), so each paper is announced exactly once, never duplicated.
+- **Read** — you actually read it. The scanner can't know this; your reader does.
 
-## Run locally
+**RSS / Feedly is the read/unread queue.** Each paper enters the feed once with
+its DOI as a stable `guid`, stays unread until you read it, and reopens fine.
 
-```sh
-pip install -e ".[dev]"
-python -m paper_feeder.main          # writes docs/ and data/seen.json
-pytest                                # run tests
-```
-
-Paths can be overridden: `python -m paper_feeder.main --config … --data … --docs …`.
-
-## Deploy
-
-GitHub Actions ([`.github/workflows/scan.yml`](.github/workflows/scan.yml)) runs
-daily, commits the updated `docs/` and `data/`, and pushes. Point GitHub Pages
-at the `main` branch `/docs` folder. **No secrets are required** — the polite-pool
-`mailto` in `sources.yaml` is public, and the commit-back uses the default
-`GITHUB_TOKEN`.
+**The HTML page is a rolling `window_days` (default 7) window** — matched papers
+persist, relevance-ranked, with a "new" badge on today's, then age out (they
+remain in Feedly). RSS stays strictly once-per-paper so Feedly isn't re-spammed.
 
 ## Refining the lexicon
 
@@ -62,43 +71,35 @@ phrase (`{term: ..., weight: N}`) or raw regex (`{pattern: ..., weight: N}`);
 `exclude` entries veto known false positives. A term in the **title** counts
 `title_boost`× its weight; in the abstract, ×1.
 
-Tuning loop: review the digest, note false positives/negatives, and periodically
-refine the lexicon. This is transparent and cheap — you can always see exactly
-why a paper matched.
-
-The easiest way to refine it is the **`/compile-lexicon` Claude Code command**
-([`.claude/commands/compile-lexicon.md`](.claude/commands/compile-lexicon.md)).
-Drop your BibTeX library at `seeds/library.bib` and run, inside Claude Code:
+The easiest way to refine it is the bundled **`/compile-lexicon` Claude Code
+command** (in the consumer template). Drop your BibTeX at `seeds/library.bib` and
+run, inside Claude Code:
 
 ```
 /compile-lexicon seeds/library.bib notes.txt https://your-group.edu/research
 ```
 
-It reads those sources, proposes weighted additions/exclusions against the
-current `scoring.yaml`, and waits for you to approve before editing. It runs on
-your Claude subscription — no API key.
-
-## Reading model: seen vs. unread
-
-Two notions of "seen" live in different places:
-
-- **Emitted** — the scanner has surfaced a paper before. Tracked by
-  `data/seen.json` (keyed by DOI), so each paper is announced exactly once and
-  never duplicated.
-- **Read** — you actually read it. The scanner can't know this; your reader does.
-
-**RSS / Feedly is the read/unread queue.** Each paper enters the feed once with
-its DOI as a stable `guid`, stays unread in Feedly until you read it, and can be
-reopened later. That's the surface for "came up, didn't read, open again later."
-
-**The HTML page is a rolling `window_days` (default 7) window.** It shows all
-matched papers from the last week, relevance-ranked, with a "new" badge on
-today's. Unread papers linger on the page for the window, then age out (they
-remain in Feedly). RSS stays strictly once-per-paper so Feedly isn't re-spammed.
+It reads those sources, proposes weighted additions/exclusions against your
+current `scoring.yaml`, and waits for approval before editing. Runs on your
+Claude subscription — no API key.
 
 ## Optional LLM rerank
 
-Set `llm_rerank.enabled: true` in `scoring.yaml` and implement
-`maybe_rerank()` in [`src/paper_feeder/rerank.py`](src/paper_feeder/rerank.py)
-to rerank the top-N keyword-scored papers with a model. Requires the `llm`
-extra (`pip install -e ".[llm]"`) and an API key. Left unimplemented by design.
+Set `llm_rerank.enabled: true` in `scoring.yaml` and implement `maybe_rerank()`
+in [`src/paper_feeder/rerank.py`](src/paper_feeder/rerank.py) to rerank the top-N
+keyword-scored papers with a model (`pip install "…[llm]"`, needs an API key).
+Off and unimplemented by design.
+
+## Develop
+
+```sh
+git clone https://github.com/alex-robinson/paper-feeder
+cd paper-feeder
+pip install -e ".[dev]"
+pytest
+```
+
+Package layout: `src/paper_feeder/` — `fetch/` (rss/openalex/crossref),
+`normalize.py`, `dedupe.py`, `score.py`, `rerank.py`, `seen.py`, `window.py`,
+`render.py`, `main.py`. Rendering is stdlib-only; runtime deps are just
+`feedparser`, `requests`, `pyyaml`.
