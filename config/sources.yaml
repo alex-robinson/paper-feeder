@@ -4,6 +4,7 @@ title: "Paper Feeder"
 link: ""                    # set to the published Pages URL once known
 mailto: ajr225@gmail.com
 lookback_days: 2           # how far back API queries reach (RSS is inherently recent)
+window_days: 7             # HTML page keeps matched papers for this many days
 retention_days: 180        # prune seen.json entries older than this
 
 rss:

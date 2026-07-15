@@ -30,8 +30,10 @@ src/paper_feeder/      # the package
   score.py             # keyword scorer
   rerank.py            # optional LLM rerank seam (off by default)
   render.py            # HTML + RSS (stdlib only)
+  window.py            # rolling display-window record store
   main.py              # orchestrator
-data/seen.json         # committed state: DOI/title -> first-seen date
+data/seen.json         # dedup ledger: DOI/title -> first-seen date
+data/window.json       # scored records currently shown on the page
 docs/                  # GitHub Pages root (index.html, feed.xml)
 ```
 
@@ -61,8 +63,38 @@ phrase (`{term: ..., weight: N}`) or raw regex (`{pattern: ..., weight: N}`);
 `title_boost`× its weight; in the abstract, ×1.
 
 Tuning loop: review the digest, note false positives/negatives, and periodically
-hand those to Claude along with your BibTeX library to update the lexicon. This
-is transparent and cheap — you can always see exactly why a paper matched.
+refine the lexicon. This is transparent and cheap — you can always see exactly
+why a paper matched.
+
+The easiest way to refine it is the **`/compile-lexicon` Claude Code command**
+([`.claude/commands/compile-lexicon.md`](.claude/commands/compile-lexicon.md)).
+Drop your BibTeX library at `seeds/library.bib` and run, inside Claude Code:
+
+```
+/compile-lexicon seeds/library.bib notes.txt https://your-group.edu/research
+```
+
+It reads those sources, proposes weighted additions/exclusions against the
+current `scoring.yaml`, and waits for you to approve before editing. It runs on
+your Claude subscription — no API key.
+
+## Reading model: seen vs. unread
+
+Two notions of "seen" live in different places:
+
+- **Emitted** — the scanner has surfaced a paper before. Tracked by
+  `data/seen.json` (keyed by DOI), so each paper is announced exactly once and
+  never duplicated.
+- **Read** — you actually read it. The scanner can't know this; your reader does.
+
+**RSS / Feedly is the read/unread queue.** Each paper enters the feed once with
+its DOI as a stable `guid`, stays unread in Feedly until you read it, and can be
+reopened later. That's the surface for "came up, didn't read, open again later."
+
+**The HTML page is a rolling `window_days` (default 7) window.** It shows all
+matched papers from the last week, relevance-ranked, with a "new" badge on
+today's. Unread papers linger on the page for the window, then age out (they
+remain in Feedly). RSS stays strictly once-per-paper so Feedly isn't re-spammed.
 
 ## Optional LLM rerank
 

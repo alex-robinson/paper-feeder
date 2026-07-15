@@ -34,7 +34,7 @@ def test_render_html_escapes():
 
 def test_render_html_empty_digest():
     html = render_html([], [], date(2024, 2, 2))
-    assert "No new matching papers today." in html
+    assert "No matching papers in the window." in html
 
 
 def test_render_html_serendipity_section():

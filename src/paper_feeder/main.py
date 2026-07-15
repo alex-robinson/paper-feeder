@@ -25,6 +25,7 @@ from .render import render_html, render_rss
 from .rerank import maybe_rerank
 from .score import score_records
 from .seen import filter_unseen, load_seen, prune_seen, save_seen, update_seen
+from .window import add_to_window, load_window, prune_window, save_window
 
 log = logging.getLogger("paper_feeder")
 
@@ -74,28 +75,42 @@ def run(
     seen = load_seen(seen_path)
     fresh = filter_unseen(records, seen)
 
-    scored = score_records(fresh, scoring)  # excluded dropped, sorted best-first
+    scored = score_records(fresh, scoring)  # fresh only, excluded dropped, best-first
     min_score = float(scoring.get("publish_min_score", 3.0))
 
-    digest: list[Record] = []
-    below: list[Record] = []
+    fresh_digest: list[Record] = []
+    fresh_below: list[Record] = []
     for rec in scored:
-        (digest if (rec.score >= min_score or rec.is_editorial) else below).append(rec)
+        target = fresh_digest if (rec.score >= min_score or rec.is_editorial) else fresh_below
+        target.append(rec)
 
-    digest = maybe_rerank(digest, scoring)  # no-op unless llm_rerank.enabled
+    fresh_digest = maybe_rerank(fresh_digest, scoring)  # no-op unless enabled
+
+    # Rolling window: today's fresh digest joins prior days' still-recent
+    # records so the HTML page holds unread papers for ``window_days``.
+    window_path = data_dir / "window.json"
+    window = load_window(window_path)
+    window = add_to_window(window, fresh_digest, today)
+    window = prune_window(window, today, int(sources.get("window_days", 7)))
+    window.sort(key=lambda r: r.score, reverse=True)
+    save_window(window, window_path)
 
     n = int(scoring.get("serendipity_count", 3))
-    serendipity = random.sample(below, min(n, len(below))) if below else []
+    serendipity = (
+        random.sample(fresh_below, min(n, len(fresh_below))) if fresh_below else []
+    )
 
     title = sources.get("title", "Paper Feeder")
     link = sources.get("link", "")
 
     docs_dir.mkdir(parents=True, exist_ok=True)
+    # HTML shows the whole rolling window; RSS emits only today's fresh papers
+    # (once-per-paper — Feedly tracks read/unread from there).
     (docs_dir / "index.html").write_text(
-        render_html(digest, serendipity, today, title=title)
+        render_html(window, serendipity, today, title=title)
     )
     (docs_dir / "feed.xml").write_text(
-        render_rss(digest, today, title=title, link=link)
+        render_rss(fresh_digest, today, title=title, link=link)
     )
 
     # Mark everything we processed so it never reappears; prune to bound the file.
@@ -106,7 +121,8 @@ def run(
     summary = {
         "fetched": len(records),
         "fresh": len(fresh),
-        "digest": len(digest),
+        "rss": len(fresh_digest),
+        "window": len(window),
         "serendipity": len(serendipity),
     }
     log.info("run complete: %s", summary)

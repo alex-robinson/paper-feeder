@@ -25,6 +25,8 @@ a { color: inherit; }
 .why { color: #2a7; font-size: 0.85rem; }
 .score { color: #888; font-variant-numeric: tabular-nums; }
 .editorial { color: #a70; }
+.new { background: #2a7; color: #fff; font-size: 0.7rem; font-weight: 600;
+       padding: 0.05rem 0.35rem; border-radius: 0.6rem; vertical-align: middle; }
 details summary { cursor: pointer; color: #888; font-size: 0.85rem; }
 details p { color: #ccc9; font-size: 0.92rem; }
 .section-note { color: #888; font-size: 0.85rem; font-style: italic; }
@@ -39,13 +41,18 @@ def _authors_str(authors: list[str], limit: int = 6) -> str:
     return ", ".join(authors[:limit]) + f", … (+{len(authors) - limit})"
 
 
-def _article_html(rec: Record) -> str:
+def _article_html(rec: Record, today: date | None = None) -> str:
     href = (
         f"https://doi.org/{rec.doi}"
         if rec.doi
         else escape(rec.url or "#", quote=True)
     )
     title = escape(rec.title or "(untitled)")
+    new_badge = (
+        '<span class="new">new</span> '
+        if today is not None and rec.first_seen == today
+        else ""
+    )
     bits = []
     if rec.journal:
         bits.append(escape(rec.journal))
@@ -75,7 +82,7 @@ def _article_html(rec: Record) -> str:
         abstract = '<div class="section-note">no abstract available</div>'
     return (
         "<article>"
-        f'<h2><a href="{href}">{title}</a> {score}</h2>'
+        f'<h2>{new_badge}<a href="{href}">{title}</a> {score}</h2>'
         f"{authors_line}"
         f'<div class="meta">{meta}</div>'
         f"{why}{abstract}"
@@ -89,17 +96,19 @@ def render_html(
     generated_on: date,
     title: str = "Paper Feeder",
 ) -> str:
+    n_new = sum(1 for r in digest if r.first_seen == generated_on)
     parts = [
         "<!doctype html><html lang=en><head><meta charset=utf-8>",
         '<meta name=viewport content="width=device-width, initial-scale=1">',
         f"<title>{escape(title)}</title><style>{_STYLE}</style></head><body>",
         f"<h1>{escape(title)}</h1>",
-        f'<p class="meta">{len(digest)} papers · generated {generated_on.isoformat()}</p>',
+        f'<p class="meta">{len(digest)} papers ({n_new} new) · '
+        f"generated {generated_on.isoformat()}</p>",
     ]
     if digest:
-        parts.extend(_article_html(r) for r in digest)
+        parts.extend(_article_html(r, today=generated_on) for r in digest)
     else:
-        parts.append('<p class="section-note">No new matching papers today.</p>')
+        parts.append('<p class="section-note">No matching papers in the window.</p>')
     if serendipity:
         parts.append(
             '<h1>Serendipity</h1><p class="section-note">'

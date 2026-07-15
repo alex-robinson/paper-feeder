@@ -23,6 +23,9 @@ class Record:
     is_editorial: bool = False  # News & Views, Perspectives, etc.
     abstract_missing: bool = False
 
+    # set when a record first enters the rolling display window
+    first_seen: date | None = None
+
     # scoring output
     score: float = 0.0
     matched: list[str] = field(default_factory=list)  # terms that hit, for display
