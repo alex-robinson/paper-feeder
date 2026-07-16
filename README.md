@@ -99,6 +99,25 @@ its DOI as a stable `guid`, stays unread until you read it, and reopens fine.
 persist, relevance-ranked, with a "new" badge on today's, then age out (they
 remain in Feedly). RSS stays strictly once-per-paper so Feedly isn't re-spammed.
 
+## Customize the look
+
+The page ships with a complete, light/dark-aware design — you write no HTML or
+CSS to get it. To restyle without forking, add an optional `render:` block to
+`sources.yaml`. Extra CSS is appended after the built-in stylesheet, which is
+built on CSS variables, so overriding one line is enough:
+
+```yaml
+render:
+  subtitle: "New papers in my field, updated daily"
+  css: |
+    :root { --accent: #06c; --maxw: 52rem; --title-size: 1rem; }
+  css_file: custom.css        # or a CSS file next to your config
+```
+
+Overridable variables: `--maxw`, `--font`, `--accent`, `--muted`, `--title-size`,
+`--title-dark`. Any selector you add also wins by cascade order, so you can go
+further than the variables when you want.
+
 ## Refining the lexicon
 
 `config/scoring.yaml` is the quality lever. Each `include` entry is a literal

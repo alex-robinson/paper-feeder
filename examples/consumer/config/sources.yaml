@@ -7,6 +7,15 @@ lookback_days: 14          # how far back OpenAlex/Crossref reach (they lag; RSS
 window_days: 7             # HTML page keeps matched papers for this many days
 retention_days: 180        # prune seen.json entries older than this
 
+# Optional look-and-feel. The built-in design works out of the box; override
+# only what you want. Extra CSS is appended after the defaults, so overriding a
+# variable is enough — you don't restate the whole stylesheet.
+# render:
+#   subtitle: "New papers in my field, updated daily"
+#   css: |
+#     :root { --accent: #06c; --maxw: 52rem; --title-size: 1rem; }
+#   css_file: custom.css       # or point to a CSS file next to this config
+
 # Real-time journal feeds. All verified to parse; the keyword lexicon filters
 # each journal's firehose down to your topics.
 rss:

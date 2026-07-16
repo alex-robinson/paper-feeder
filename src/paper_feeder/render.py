@@ -13,25 +13,35 @@ from xml.sax.saxutils import escape as xml_escape
 
 from .models import Record
 
+# Themeable via CSS custom properties: a consumer can override any of these by
+# passing extra CSS (see render config), e.g. `:root { --accent: #06c; }`.
 _STYLE = """
-:root { color-scheme: light dark; }
-body { font: 16px/1.5 -apple-system, system-ui, sans-serif; max-width: 46rem;
-       margin: 2rem auto; padding: 0 1rem; }
+:root {
+  color-scheme: light dark;
+  --maxw: 46rem;           /* content width */
+  --font: 16px/1.5 -apple-system, system-ui, sans-serif;
+  --accent: #2a7;          /* "matched" text + "new" badge */
+  --muted: #888;           /* meta / secondary text */
+  --title-size: 0.95rem;
+  --title-dark: #b5b5b5;   /* article title colour in dark mode */
+}
+body { font: var(--font); max-width: var(--maxw); margin: 2rem auto; padding: 0 1rem; }
 h1 { font-size: 1.5rem; }
-.meta { color: #888; font-size: 0.85rem; }
+.subtitle { color: var(--muted); margin: -0.4rem 0 1rem; }
+.meta { color: var(--muted); font-size: 0.85rem; }
 article { border-top: 1px solid #8884; padding: 0.8rem 0; }
-article h2 { font-size: 0.95rem; margin: 0 0 0.2rem; }
+article h2 { font-size: var(--title-size); margin: 0 0 0.2rem; }
 a { color: inherit; }
 article h2 a { color: inherit; }
-@media (prefers-color-scheme: dark) { article h2 a { color: #b5b5b5; } }
-.why { color: #2a7; font-size: 0.85rem; }
-.score { color: #888; font-variant-numeric: tabular-nums; }
+@media (prefers-color-scheme: dark) { article h2 a { color: var(--title-dark); } }
+.why { color: var(--accent); font-size: 0.85rem; }
+.score { color: var(--muted); font-variant-numeric: tabular-nums; }
 .editorial { color: #a70; }
-.new { background: #2a7; color: #fff; font-size: 0.7rem; font-weight: 600;
+.new { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 600;
        padding: 0.05rem 0.35rem; border-radius: 0.6rem; vertical-align: middle; }
-details summary { cursor: pointer; color: #888; font-size: 0.85rem; }
+details summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
 details p { color: #ccc9; font-size: 0.92rem; }
-.section-note { color: #888; font-size: 0.85rem; font-style: italic; }
+.section-note { color: var(--muted); font-size: 0.85rem; font-style: italic; }
 """
 
 
@@ -100,13 +110,23 @@ def render_html(
     serendipity: list[Record],
     generated_on: date,
     title: str = "Paper Feeder",
+    subtitle: str | None = None,
+    extra_css: str | None = None,
 ) -> str:
+    """Render the digest page.
+
+    ``extra_css`` is appended after the built-in stylesheet, so a consumer can
+    override the ``:root`` custom properties (or any rule) without editing the
+    package. ``subtitle`` renders one line under the title.
+    """
     n_new = sum(1 for r in digest if r.first_seen == generated_on)
+    style = _STYLE + (extra_css or "")
     parts = [
         "<!doctype html><html lang=en><head><meta charset=utf-8>",
         '<meta name=viewport content="width=device-width, initial-scale=1">',
-        f"<title>{escape(title)}</title><style>{_STYLE}</style></head><body>",
+        f"<title>{escape(title)}</title><style>{style}</style></head><body>",
         f"<h1>{escape(title)}</h1>",
+        (f'<p class="subtitle">{escape(subtitle)}</p>' if subtitle else ""),
         f'<p class="meta">{len(digest)} papers ({n_new} new) · '
         f"generated {generated_on.isoformat()}</p>",
     ]

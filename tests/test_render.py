@@ -32,6 +32,21 @@ def test_render_html_escapes():
     assert "&lt;b&gt;bold&lt;/b&gt;" in html
 
 
+def test_render_html_subtitle_and_extra_css():
+    css = ":root { --accent: #06c; }"
+    html = render_html([_rec(matched=["ice sheet"], score=6.0)], [],
+                       date(2024, 2, 2), subtitle="my digest", extra_css=css)
+    assert '<p class="subtitle">my digest</p>' in html
+    # extra css is appended after the built-in stylesheet (so it overrides)
+    assert css in html
+    assert html.index("--accent: #2a7") < html.index(css)
+
+
+def test_render_html_no_subtitle_by_default():
+    html = render_html([_rec()], [], date(2024, 2, 2))
+    assert 'class="subtitle"' not in html
+
+
 def test_render_html_layout():
     import re
     rec = _rec(matched=["ice sheet"], score=6.0, published=date(2024, 2, 1))

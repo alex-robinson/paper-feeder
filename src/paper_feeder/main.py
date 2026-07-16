@@ -103,11 +103,27 @@ def run(
     title = sources.get("title", "Paper Feeder")
     link = sources.get("link", "")
 
+    # Optional theming: subtitle + extra CSS (inline and/or a file next to config).
+    render_cfg = sources.get("render") or {}
+    subtitle = render_cfg.get("subtitle")
+    extra_css = render_cfg.get("css") or ""
+    css_file = render_cfg.get("css_file")
+    if css_file:
+        css_path = Path(css_file)
+        if not css_path.is_absolute():
+            css_path = config_dir / css_file
+        try:
+            extra_css = (extra_css + "\n" + css_path.read_text()).strip()
+        except OSError as exc:
+            log.warning("render.css_file %s not readable: %s", css_file, exc)
+    extra_css = extra_css or None
+
     docs_dir.mkdir(parents=True, exist_ok=True)
     # HTML shows the whole rolling window; RSS emits only today's fresh papers
     # (once-per-paper — Feedly tracks read/unread from there).
     (docs_dir / "index.html").write_text(
-        render_html(window, serendipity, today, title=title)
+        render_html(window, serendipity, today, title=title,
+                    subtitle=subtitle, extra_css=extra_css)
     )
     (docs_dir / "feed.xml").write_text(
         render_rss(fresh_digest, today, title=title, link=link)
