@@ -3,25 +3,51 @@
 title: "Paper Feeder"
 link: ""                    # set to the published Pages URL once known
 mailto: ajr225@gmail.com
-lookback_days: 2           # how far back API queries reach (RSS is inherently recent)
+lookback_days: 14          # how far back OpenAlex/Crossref reach (they lag; RSS is real-time)
 window_days: 7             # HTML page keeps matched papers for this many days
 retention_days: 180        # prune seen.json entries older than this
 
+# Real-time journal feeds. All verified to parse; the keyword lexicon filters
+# each journal's firehose down to your topics.
 rss:
-  - {name: nature, url: "https://www.nature.com/nature.rss"}
-  - {name: science, url: "https://www.science.org/rss/news_current.xml"}
+  # Nature family
+  - {name: nature, url: "https://www.nature.com/nature.rss", journal: "Nature"}
+  - {name: nclimate, url: "https://www.nature.com/nclimate.rss", journal: "Nature Climate Change"}
+  - {name: ngeo, url: "https://www.nature.com/ngeo.rss", journal: "Nature Geoscience"}
+  - {name: ncomms, url: "https://www.nature.com/ncomms.rss", journal: "Nature Communications"}
+  - {name: natrev-ee, url: "https://www.nature.com/natrevearthenviron.rss", journal: "Nature Reviews Earth & Environment"}
+  # AAAS
+  - {name: science, url: "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science", journal: "Science"}
+  - {name: sciadv, url: "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=sciadv", journal: "Science Advances"}
+  # PNAS
+  - {name: pnas, url: "https://www.pnas.org/action/showFeed?type=etoc&feed=rss&jc=pnas", journal: "PNAS"}
+  # AGU / Wiley
+  - {name: grl, url: "https://agupubs.onlinelibrary.wiley.com/feed/19448007/most-recent", journal: "Geophysical Research Letters"}
+  - {name: jgr-earthsurface, url: "https://agupubs.onlinelibrary.wiley.com/feed/21699011/most-recent", journal: "JGR Earth Surface"}
+  - {name: jgr-solidearth, url: "https://agupubs.onlinelibrary.wiley.com/feed/21699356/most-recent", journal: "JGR Solid Earth"}
+  - {name: jgr-oceans, url: "https://agupubs.onlinelibrary.wiley.com/feed/21699291/most-recent", journal: "JGR Oceans"}
+  - {name: jgr-atmospheres, url: "https://agupubs.onlinelibrary.wiley.com/feed/21698996/most-recent", journal: "JGR Atmospheres"}
+  - {name: james, url: "https://agupubs.onlinelibrary.wiley.com/feed/19422466/most-recent", journal: "JAMES"}
+  - {name: earths-future, url: "https://agupubs.onlinelibrary.wiley.com/feed/23284277/most-recent", journal: "Earth's Future"}
+  # Copernicus
   - {name: tc, url: "https://tc.copernicus.org/xml/rss2_0.xml", journal: "The Cryosphere"}
   - {name: cp, url: "https://cp.copernicus.org/xml/rss2_0.xml", journal: "Climate of the Past"}
+  - {name: esd, url: "https://esd.copernicus.org/xml/rss2_0.xml", journal: "Earth System Dynamics"}
+  - {name: essd, url: "https://essd.copernicus.org/xml/rss2_0.xml", journal: "Earth System Science Data"}
+  # PLOS
+  - {name: plos-climate, url: "https://journals.plos.org/climate/feed/atom", journal: "PLOS Climate"}
+  # preprints
   - {name: arxiv-ao-ph, url: "http://arxiv.org/rss/physics.ao-ph", journal: "arXiv physics.ao-ph"}
 
 openalex:
-  # filter is an OpenAlex works filter; from_publication_date is added at runtime.
-  # Look up topic IDs at https://api.openalex.org/topics?search=... and replace.
+  # Journal-agnostic discovery — catches relevant papers from journals not listed above.
   queries:
-    - {name: ice-sheets, filter: "primary_topic.id:T10744"}
+    - {name: cryosphere, filter: "primary_topic.id:T10644"}     # Cryospheric studies and observations
+    - {name: paleoclimate, filter: "primary_topic.id:T10017"}   # Geology and Paleoclimatology Research
+  # ISSN pulls for journals without a working RSS feed.
   issns:
-    - "1758-678X"          # Nature Climate Change
-    - "0027-8424"          # PNAS
+    - "0022-1430"   # Journal of Glaciology
+    - "0894-8755"   # Journal of Climate
 
 crossref:
   issns: []                # fallback only, for journals OpenAlex indexes poorly

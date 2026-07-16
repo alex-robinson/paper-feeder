@@ -20,8 +20,10 @@ body { font: 16px/1.5 -apple-system, system-ui, sans-serif; max-width: 46rem;
 h1 { font-size: 1.5rem; }
 .meta { color: #888; font-size: 0.85rem; }
 article { border-top: 1px solid #8884; padding: 0.8rem 0; }
-article h2 { font-size: 1.05rem; margin: 0 0 0.2rem; }
+article h2 { font-size: 0.95rem; margin: 0 0 0.2rem; }
 a { color: inherit; }
+article h2 a { color: inherit; }
+@media (prefers-color-scheme: dark) { article h2 a { color: #b5b5b5; } }
 .why { color: #2a7; font-size: 0.85rem; }
 .score { color: #888; font-variant-numeric: tabular-nums; }
 .editorial { color: #a70; }
@@ -49,7 +51,7 @@ def _article_html(rec: Record, today: date | None = None) -> str:
     )
     title = escape(rec.title or "(untitled)")
     new_badge = (
-        '<span class="new">new</span> '
+        '<span class="new">new</span>'
         if today is not None and rec.first_seen == today
         else ""
     )
@@ -61,17 +63,20 @@ def _article_html(rec: Record, today: date | None = None) -> str:
     if rec.is_editorial:
         bits.append('<span class="editorial">editorial</span>')
     meta = " · ".join(bits)
+    if new_badge:  # "new" sits to the right of the date, off the title line
+        meta = f"{meta} {new_badge}" if meta else new_badge
     authors_line = (
         f'<div class="meta">{escape(_authors_str(rec.authors))}</div>'
         if rec.authors
         else ""
     )
-    why = (
-        f'<div class="why">matched: {escape(", ".join(rec.matched))}</div>'
-        if rec.matched
-        else ""
+    # score sits to the left of "matched:" — both relate to scoring
+    score_span = f'<span class="score">{rec.score:.1f}</span>' if rec.score else ""
+    matched_txt = (
+        f'matched: {escape(", ".join(rec.matched))}' if rec.matched else ""
     )
-    score = f'<span class="score">{rec.score:.1f}</span>' if rec.score else ""
+    why_inner = " ".join(p for p in (score_span, matched_txt) if p)
+    why = f'<div class="why">{why_inner}</div>' if why_inner else ""
     abstract = ""
     if rec.abstract:
         abstract = (
@@ -82,7 +87,7 @@ def _article_html(rec: Record, today: date | None = None) -> str:
         abstract = '<div class="section-note">no abstract available</div>'
     return (
         "<article>"
-        f'<h2>{new_badge}<a href="{href}">{title}</a> {score}</h2>'
+        f'<h2><a href="{href}" target="_blank" rel="noopener noreferrer">{title}</a></h2>'
         f"{authors_line}"
         f'<div class="meta">{meta}</div>'
         f"{why}{abstract}"

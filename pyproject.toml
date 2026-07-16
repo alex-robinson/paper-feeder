@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paper-feeder"
-version = "0.1.0"
+version = "0.1.1"
 description = "Keyword-scored digest of new papers from RSS feeds + OpenAlex/Crossref, published as a static HTML page and RSS feed."
 readme = "README.md"
 requires-python = ">=3.11"

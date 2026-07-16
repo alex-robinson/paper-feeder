@@ -21,6 +21,12 @@ log = logging.getLogger("paper_feeder.rss")
 _TAG = re.compile(r"<[^>]+>")
 _WS = re.compile(r"\s+")
 
+# Some publishers (Wiley, Science, PNAS) 403 the default feedparser UA.
+_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124 Safari/537.36"
+)
+
 
 def _clean_summary(text: str | None) -> str | None:
     """RSS summaries are often HTML; reduce to collapsed plain text."""
@@ -96,7 +102,7 @@ def parse_feed(name: str, parsed, journal: str | None = None) -> list[Record]:
 
 def fetch_rss(name: str, url: str, journal: str | None = None) -> list[Record]:
     try:
-        parsed = feedparser.parse(url)
+        parsed = feedparser.parse(url, agent=_UA)
         if parsed.bozo and not parsed.entries:
             log.warning("feed %s parse error: %s", name, parsed.bozo_exception)
             return []

@@ -32,6 +32,24 @@ def test_render_html_escapes():
     assert "&lt;b&gt;bold&lt;/b&gt;" in html
 
 
+def test_render_html_layout():
+    import re
+    rec = _rec(matched=["ice sheet"], score=6.0, published=date(2024, 2, 1))
+    rec.first_seen = date(2024, 2, 2)
+    html = render_html([rec], [], date(2024, 2, 2))
+    # links open in a new tab
+    assert 'target="_blank"' in html and 'rel="noopener noreferrer"' in html
+    # title line carries neither the score nor the "new" badge (title never offset)
+    h2 = re.search(r"<h2>.*?</h2>", html).group(0)
+    assert "6.0" not in h2 and "new" not in h2
+    # score sits before "matched:" on the why line
+    why = re.search(r'<div class="why">(.*?)</div>', html).group(1)
+    assert why.index("6.0") < why.index("matched:")
+    # "new" badge sits on the meta line, to the right of the date
+    metas = re.findall(r'<div class="meta">(.*?)</div>', html)
+    assert any("new" in m and "2024-02-01" in m for m in metas)
+
+
 def test_render_html_empty_digest():
     html = render_html([], [], date(2024, 2, 2))
     assert "No matching papers in the window." in html
