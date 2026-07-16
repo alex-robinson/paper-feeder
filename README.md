@@ -107,7 +107,7 @@ blocked — but OpenAlex gives you Scholar-style citation alerts for free:
 ```yaml
 openalex:
   queries:
-    - {name: cites-me, filter: "cites:W123|W456|W789", score_boost: 2}
+    - {name: cites-me, filter: "cites:W123|W456|W789", score_boost: 2, lookback_days: 180}
 ```
 
 Two source-level knobs control how such a source interacts with the lexicon:
@@ -121,6 +121,10 @@ Two source-level knobs control how such a source interacts with the lexicon:
 means a citing paper needs only a weak topical match, while a citation from an
 unrelated field still drops out. Exclusions veto in both cases. Papers kept via
 either knob are labelled with the source name so you can see why they're there.
+
+Any query may override the global `lookback_days`. Citation queries need a much
+wider window: citations trickle in and are indexed late, so a narrow window
+misses them permanently. Wide is safe — `seen.json` stops re-announcements.
 
 Find your ids via the API: `authors?search=Your+Name`, then
 `works?filter=author.id:AXXXX&sort=cited_by_count:desc`. Pick your **topically

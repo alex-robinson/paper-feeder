@@ -57,7 +57,12 @@ openalex:
   # Find your author id and work ids via the OpenAlex API:
   #   https://api.openalex.org/authors?search=Your+Name
   #   https://api.openalex.org/works?filter=author.id:AXXXXXXXX&sort=cited_by_count:desc
-  # - {name: cites-me, filter: "cites:W123|W456|W789", score_boost: 2}
+  # - {name: cites-me, filter: "cites:W123|W456|W789", score_boost: 2, lookback_days: 180}
+  #
+  # Citations trickle in and are indexed late, so give a cites: query a much
+  # wider lookback_days than the global one — a paper published 30 days ago may
+  # only be indexed today, and a narrow window would miss it forever. Wide is
+  # safe: seen.json stops re-announcements.
   #
   # score_boost gives partial credit: a citing paper still needs some topical
   # signal to clear publish_min_score, so citations from unrelated fields stay

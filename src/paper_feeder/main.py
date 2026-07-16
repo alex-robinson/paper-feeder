@@ -42,9 +42,20 @@ def _mark(records: list[Record], entry: dict) -> list[Record]:
     return records
 
 
-def fetch_all(sources: dict, since: date) -> list[Record]:
-    """Fetch every configured source, logging and skipping failures."""
+def fetch_all(sources: dict, today: date) -> list[Record]:
+    """Fetch every configured source, logging and skipping failures.
+
+    Each OpenAlex query may override ``lookback_days``: citation queries need a
+    far wider window than topic queries, because citations trickle in and are
+    indexed late. A wide window is safe — ``seen.json`` stops re-announcements.
+    """
     mailto = sources.get("mailto")
+    since = today - timedelta(days=int(sources.get("lookback_days", 2)))
+
+    def _since_for(entry: dict) -> date:
+        days = entry.get("lookback_days")
+        return today - timedelta(days=int(days)) if days else since
+
     records: list[Record] = []
 
     for feed in sources.get("rss", []) or []:
@@ -56,7 +67,7 @@ def fetch_all(sources: dict, since: date) -> list[Record]:
     oa = sources.get("openalex", {}) or {}
     for q in oa.get("queries", []) or []:
         records += _mark(
-            openalex_query(session, q["name"], q["filter"], since, mailto), q
+            openalex_query(session, q["name"], q["filter"], _since_for(q), mailto), q
         )
     for issn in oa.get("issns", []) or []:
         records += openalex_issn(session, issn, since, mailto)
@@ -80,10 +91,7 @@ def run(
 
     sources = load_yaml(config_dir / "sources.yaml")
     scoring = load_yaml(config_dir / "scoring.yaml")
-    lookback = int(sources.get("lookback_days", 2))
-    since = today - timedelta(days=lookback)
-
-    records = fetch_all(sources, since)
+    records = fetch_all(sources, today)
     records = [r for r in records if r.title]
     records = dedupe(records)
 

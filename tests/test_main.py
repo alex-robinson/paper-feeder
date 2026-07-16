@@ -50,7 +50,7 @@ def test_rss_once_html_windowed(tmp_path, monkeypatch):
     data, docs = tmp_path / "data", tmp_path / "docs"
 
     batch: list[Record] = []
-    monkeypatch.setattr(main_mod, "fetch_all", lambda sources, since: list(batch))
+    monkeypatch.setattr(main_mod, "fetch_all", lambda sources, today: list(batch))
 
     # Day 1: paper A appears.
     batch[:] = [_rec("10.1/a", "A")]
@@ -76,3 +76,22 @@ def test_rss_once_html_windowed(tmp_path, monkeypatch):
     html = (docs / "index.html").read_text()
     assert "ice sheet A" not in html and "ice sheet B" not in html
     assert "No matching papers in the window." in html
+
+
+def test_per_query_lookback_override(monkeypatch):
+    """An OpenAlex query may widen its own window (citations are indexed late)."""
+    import paper_feeder.main as m
+    seen_since = {}
+    monkeypatch.setattr(m, "make_session", lambda mailto: None)
+    monkeypatch.setattr(m, "openalex_query",
+                        lambda s, name, filt, since, mailto: seen_since.setdefault(name, since) and [] or [])
+    sources = {
+        "lookback_days": 14,
+        "openalex": {"queries": [
+            {"name": "topics", "filter": "primary_topic.id:T1"},
+            {"name": "cites-me", "filter": "cites:W1", "lookback_days": 180},
+        ]},
+    }
+    m.fetch_all(sources, date(2024, 6, 30))
+    assert seen_since["topics"] == date(2024, 6, 16)     # global 14d
+    assert seen_since["cites-me"] == date(2024, 1, 2)    # per-query 180d
