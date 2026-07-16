@@ -1,3 +1,3 @@
 """paper-feeder: keyword-scored digest of new papers, published as HTML + RSS."""
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"

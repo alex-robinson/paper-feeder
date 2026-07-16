@@ -18,11 +18,11 @@ from .models import Record
 _STYLE = """
 :root {
   color-scheme: light dark;
-  --maxw: 46rem;           /* content width */
+  --maxw: 52rem;           /* content width */
   --font: 16px/1.5 -apple-system, system-ui, sans-serif;
   --accent: #2a7;          /* "matched" text + "new" badge */
   --muted: #888;           /* meta / secondary text */
-  --title-size: 0.95rem;
+  --title-size: 0.85rem;   /* same as meta; bold + link keeps it distinct */
   --title-dark: #b5b5b5;   /* article title colour in dark mode */
 }
 body { font: var(--font); max-width: var(--maxw); margin: 2rem auto; padding: 0 1rem; }
