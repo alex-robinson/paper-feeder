@@ -104,3 +104,12 @@ def test_render_html_labels_always_include():
     rec.always_include = True
     html = render_html([rec], [], date(2024, 2, 2))
     assert '<span class="pin">cites-me</span>' in html
+
+
+def test_render_html_exposes_the_rss_feed():
+    html = render_html([_rec()], [], date(2024, 2, 2), title="Papers")
+    # autodiscovery: a reader given this page's URL can find the feed itself
+    assert ('<link rel="alternate" type="application/rss+xml" '
+            'title="Papers" href="feed.xml">') in html
+    # and a human-visible link to copy
+    assert '<a class="rss" href="feed.xml">RSS feed</a>' in html

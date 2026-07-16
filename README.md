@@ -47,8 +47,10 @@ branch (user `you.github.io` sites are already on).
 **7. Run it once** — **Actions → `scan` → "Run workflow"**. It fetches, scores,
 and commits `feed/index.html` + `feed/feed.xml`. After that it runs daily.
 
-**8. Read it** — your digest is at **`https://you.github.io/feed/`**; subscribe
-Feedly to **`https://you.github.io/feed/feed.xml`**. (Optionally add a link to
+**8. Read it** — your digest is at **`https://you.github.io/feed/`**, and the page
+links its own RSS feed and advertises it for autodiscovery, so you can just hand
+**the page URL** to Feedly and it finds the feed (or use
+**`https://you.github.io/feed/feed.xml`** directly). (Optionally add a link to
 `/feed/` in your site nav.)
 
 That's it — steps 2–4 are the only edits, and step 7 onward is automatic.

@@ -38,6 +38,7 @@ article h2 a { color: inherit; }
 .score { color: var(--muted); font-variant-numeric: tabular-nums; }
 .editorial { color: #a70; }
 .pin { color: var(--accent); }
+.rss { color: var(--accent); }
 .new { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 600;
        padding: 0.05rem 0.35rem; border-radius: 0.6rem; vertical-align: middle; }
 details summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
@@ -129,11 +130,16 @@ def render_html(
     parts = [
         "<!doctype html><html lang=en><head><meta charset=utf-8>",
         '<meta name=viewport content="width=device-width, initial-scale=1">',
+        # Feed autodiscovery: pasting THIS page's URL into a reader (Feedly et
+        # al.) is enough — it finds feed.xml from here, no need to know the path.
+        f'<link rel="alternate" type="application/rss+xml" '
+        f'title="{escape(title, quote=True)}" href="feed.xml">',
         f"<title>{escape(title)}</title><style>{style}</style></head><body>",
         f"<h1>{escape(title)}</h1>",
         (f'<p class="subtitle">{escape(subtitle)}</p>' if subtitle else ""),
         f'<p class="meta">{len(digest)} papers ({n_new} new) · '
-        f"generated {generated_on.isoformat()}</p>",
+        f"generated {generated_on.isoformat()} · "
+        f'<a class="rss" href="feed.xml">RSS feed</a></p>',
     ]
     if digest:
         parts.extend(_article_html(r, today=generated_on) for r in digest)
