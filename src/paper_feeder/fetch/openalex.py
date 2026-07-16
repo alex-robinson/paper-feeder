@@ -19,10 +19,14 @@ WORKS_URL = "https://api.openalex.org/works"
 def build_filter(filter_str: str, since: date) -> str:
     """Add the date window and constrain to journal articles.
 
-    ``type:article`` drops datasets, preprints, theses, and repository deposits
-    (Zenodo, HAL, university repos) that topic queries otherwise pull in.
+    ``type:article`` drops datasets, preprints, theses; requiring the primary
+    source be a journal also drops repository deposits (Zenodo, HAL, university
+    repos) that are themselves typed as articles.
     """
-    return f"{filter_str},from_publication_date:{since.isoformat()},type:article"
+    return (
+        f"{filter_str},from_publication_date:{since.isoformat()}"
+        ",type:article,primary_location.source.type:journal"
+    )
 
 
 def _fetch(
