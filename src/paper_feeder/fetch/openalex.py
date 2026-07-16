@@ -16,6 +16,15 @@ log = logging.getLogger("paper_feeder.openalex")
 WORKS_URL = "https://api.openalex.org/works"
 
 
+def build_filter(filter_str: str, since: date) -> str:
+    """Add the date window and constrain to journal articles.
+
+    ``type:article`` drops datasets, preprints, theses, and repository deposits
+    (Zenodo, HAL, university repos) that topic queries otherwise pull in.
+    """
+    return f"{filter_str},from_publication_date:{since.isoformat()},type:article"
+
+
 def _fetch(
     session: requests.Session,
     filter_str: str,
@@ -49,7 +58,7 @@ def fetch_query(
     since: date,
     mailto: str | None,
 ) -> list[Record]:
-    full = f"{filter_str},from_publication_date:{since.isoformat()}"
+    full = build_filter(filter_str, since)
     try:
         return _fetch(session, full, f"openalex:{name}", mailto)
     except Exception as exc:
