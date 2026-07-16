@@ -32,11 +32,13 @@ def dedupe(records: list[Record]) -> list[Record]:
         if current is None:
             best[key] = rec
             continue
-        # A paper can arrive from several sources; if any of them marked it
-        # always_include, the surviving copy must keep that.
+        # A paper can arrive from several sources; the surviving copy must keep
+        # the strongest source signal any copy carried.
         merged_always = current.always_include or rec.always_include
+        merged_boost = max(current.score_boost, rec.score_boost)
         # Prefer a record that carries an abstract over one that doesn't.
         if current.abstract is None and rec.abstract is not None:
             best[key] = rec
         best[key].always_include = merged_always
+        best[key].score_boost = merged_boost
     return list(best.values())

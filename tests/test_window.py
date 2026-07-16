@@ -69,3 +69,10 @@ def test_always_include_round_trips():
     r.always_include = True
     r.first_seen = date(2024, 1, 1)
     assert from_dict(to_dict(r)).always_include is True
+
+
+def test_score_boost_round_trips():
+    r = _rec("10.1/a")
+    r.score_boost = 2.0
+    r.first_seen = date(2024, 1, 1)
+    assert from_dict(to_dict(r)).score_boost == 2.0

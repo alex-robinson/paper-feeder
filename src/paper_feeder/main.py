@@ -31,10 +31,14 @@ log = logging.getLogger("paper_feeder")
 
 
 def _mark(records: list[Record], entry: dict) -> list[Record]:
-    """Apply a source entry's ``always_include`` flag to its records."""
-    if entry.get("always_include"):
-        for rec in records:
-            rec.always_include = True
+    """Apply a source entry's ``always_include`` / ``score_boost`` to its records."""
+    always = bool(entry.get("always_include"))
+    boost = float(entry.get("score_boost", 0) or 0)
+    if not (always or boost):
+        return records
+    for rec in records:
+        rec.always_include = rec.always_include or always
+        rec.score_boost = max(rec.score_boost, boost)
     return records
 
 

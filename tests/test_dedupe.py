@@ -48,3 +48,12 @@ def test_dedupe_preserves_always_include_from_any_copy():
     out = dedupe([a, b])
     assert len(out) == 1
     assert out[0].always_include is True  # flag survives even though a won
+
+
+def test_dedupe_keeps_strongest_score_boost():
+    a = Record(title="T", journal="J", source="rss:nature", url="", doi="10.1/x",
+               abstract="a")
+    b = Record(title="T", journal="J", source="openalex:cites-me", url="",
+               doi="10.1/x", score_boost=2.0)
+    out = dedupe([a, b])
+    assert out[0].score_boost == 2.0

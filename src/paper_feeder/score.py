@@ -113,7 +113,9 @@ def score_record(record: Record, lexicon: Lexicon) -> Record:
         if hit:
             matched.append(term.label)
 
-    record.score = score
+    # Source-level partial credit (e.g. "cites my work") tops up the keyword
+    # score, so such papers still need some topical signal to clear the bar.
+    record.score = score + record.score_boost
     record.matched = matched
     record.excluded = False
     return record

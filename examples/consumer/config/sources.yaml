@@ -57,12 +57,14 @@ openalex:
   # Find your author id and work ids via the OpenAlex API:
   #   https://api.openalex.org/authors?search=Your+Name
   #   https://api.openalex.org/works?filter=author.id:AXXXXXXXX&sort=cited_by_count:desc
-  # `always_include: true` keeps these regardless of keyword score (exclusions
-  # still veto). Pick your *topically core* papers — a broad, heavily-cited
-  # paper will pull in citations from unrelated fields.
-  # - {name: cites-me, filter: "cites:W123|W456|W789", always_include: true}
+  # - {name: cites-me, filter: "cites:W123|W456|W789", score_boost: 2}
   #
-  # `always_include` also works on any rss: entry.
+  # score_boost gives partial credit: a citing paper still needs some topical
+  # signal to clear publish_min_score, so citations from unrelated fields stay
+  # out. always_include: true bypasses scoring entirely — reserve that for a
+  # low-volume feed you want in full. Both also work on any rss: entry.
+  # Pick your *topically core* papers: a broad, heavily-cited paper attracts
+  # citations from unrelated fields.
 
   # ISSN pulls for journals without a working RSS feed.
   issns:

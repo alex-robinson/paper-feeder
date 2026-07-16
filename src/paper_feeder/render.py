@@ -73,8 +73,8 @@ def _article_html(rec: Record, today: date | None = None) -> str:
         bits.append(rec.published.isoformat())
     if rec.is_editorial:
         bits.append('<span class="editorial">editorial</span>')
-    if rec.always_include:
-        # say why a paper is here when its score alone wouldn't have kept it
+    if rec.always_include or rec.score_boost:
+        # say why a paper is here when the lexicon alone wouldn't have kept it
         label = rec.source.split(":", 1)[-1] or "pinned"
         bits.append(f'<span class="pin">{escape(label)}</span>')
     meta = " · ".join(bits)

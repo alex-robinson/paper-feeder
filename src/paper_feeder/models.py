@@ -25,6 +25,10 @@ class Record:
     # Source was marked always_include: keep regardless of score (e.g. a query
     # tracking citations of your own work). Exclusions still veto.
     always_include: bool = False
+    # Partial credit from the source (e.g. +2 for "cites my work"), added to the
+    # keyword score. Softer than always_include: the paper still needs some
+    # topical signal to clear publish_min_score.
+    score_boost: float = 0.0
 
     # set when a record first enters the rolling display window
     first_seen: date | None = None

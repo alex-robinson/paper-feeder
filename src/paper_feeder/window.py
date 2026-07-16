@@ -17,7 +17,8 @@ from .models import Record
 
 _FIELDS = (
     "title", "journal", "source", "url", "doi", "abstract", "authors",
-    "is_editorial", "abstract_missing", "always_include", "score", "matched",
+    "is_editorial", "abstract_missing", "always_include", "score_boost",
+    "score", "matched",
 )
 
 
@@ -40,6 +41,7 @@ def from_dict(d: dict) -> Record:
         is_editorial=bool(d.get("is_editorial")),
         abstract_missing=bool(d.get("abstract_missing")),
         always_include=bool(d.get("always_include")),
+        score_boost=float(d.get("score_boost", 0) or 0),
         score=float(d.get("score", 0.0)),
         matched=list(d.get("matched") or []),
     )

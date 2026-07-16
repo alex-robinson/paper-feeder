@@ -69,3 +69,24 @@ def test_score_records_sorts_and_drops_excluded():
     out = score_records(recs, CONFIG)
     assert len(out) == 3  # excluded dropped
     assert [round(r.score, 1) for r in out] == [6.0, 5.0, 0.0]
+
+
+def test_score_boost_adds_partial_credit():
+    lex = compile_lexicon(CONFIG)
+    rec = _rec(abstract="nothing relevant")
+    rec.score_boost = 2.0
+    score_record(rec, lex)
+    assert rec.score == 2.0  # boost alone stays below publish_min_score (3)
+
+    rec2 = _rec(abstract="the ice sheet")  # keyword score 3.0
+    rec2.score_boost = 2.0
+    score_record(rec2, lex)
+    assert rec2.score == 5.0  # weak topical signal + boost clears the bar
+
+
+def test_score_boost_not_applied_to_excluded():
+    lex = compile_lexicon(CONFIG)
+    rec = _rec(title="ice sheet", abstract="in Georgia")
+    rec.score_boost = 5.0
+    score_record(rec, lex)
+    assert rec.excluded is True and rec.score == 0.0

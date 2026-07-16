@@ -102,22 +102,30 @@ remain in Feedly). RSS stays strictly once-per-paper so Feedly isn't re-spammed.
 ## Track citations of your own work
 
 Google Scholar has no API or RSS, and scraping it violates its terms and gets
-blocked — but OpenAlex gives you Scholar-style citation alerts for free. Add a
-`cites:` query with `always_include`, which keeps matches regardless of keyword
-score (exclusions still veto):
+blocked — but OpenAlex gives you Scholar-style citation alerts for free:
 
 ```yaml
 openalex:
   queries:
-    - {name: cites-me, filter: "cites:W123|W456|W789", always_include: true}
+    - {name: cites-me, filter: "cites:W123|W456|W789", score_boost: 2}
 ```
+
+Two source-level knobs control how such a source interacts with the lexicon:
+
+| Knob | Effect | Use for |
+|---|---|---|
+| `score_boost: N` | adds N to the keyword score | "cites my work" — partial credit, so a citing paper still needs some topical signal |
+| `always_include: true` | keeps it regardless of score | a low-volume feed you want in full |
+
+`score_boost` is usually what you want: with `publish_min_score: 3`, a boost of 2
+means a citing paper needs only a weak topical match, while a citation from an
+unrelated field still drops out. Exclusions veto in both cases. Papers kept via
+either knob are labelled with the source name so you can see why they're there.
 
 Find your ids via the API: `authors?search=Your+Name`, then
 `works?filter=author.id:AXXXX&sort=cited_by_count:desc`. Pick your **topically
-core** papers, not simply your most-cited — a broad, heavily-cited paper drags in
-citations from unrelated fields, and `always_include` bypasses the lexicon that
-would otherwise filter them. Papers kept this way are labelled with the query
-name so you can see why they're there. The same flag works on any `rss:` entry.
+core** papers, not simply your most-cited — a broad, heavily-cited paper attracts
+citations from unrelated fields. Both knobs also work on any `rss:` entry.
 
 `author.id:AXXXX` as a filter follows a person's new output instead.
 
