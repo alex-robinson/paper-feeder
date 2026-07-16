@@ -22,6 +22,9 @@ class Record:
     # provenance flags
     is_editorial: bool = False  # News & Views, Perspectives, etc.
     abstract_missing: bool = False
+    # Source was marked always_include: keep regardless of score (e.g. a query
+    # tracking citations of your own work). Exclusions still veto.
+    always_include: bool = False
 
     # set when a record first enters the rolling display window
     first_seen: date | None = None

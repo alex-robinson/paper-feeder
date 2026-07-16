@@ -97,3 +97,10 @@ def test_render_rss_handles_special_chars():
     root = ET.fromstring(xml)  # must not blow up on raw & <
     item = root.find("channel").find("item")
     assert item.find("title").text == "A & B < C"
+
+
+def test_render_html_labels_always_include():
+    rec = _rec(source="openalex:cites-me", published=date(2024, 2, 1))
+    rec.always_include = True
+    html = render_html([rec], [], date(2024, 2, 2))
+    assert '<span class="pin">cites-me</span>' in html

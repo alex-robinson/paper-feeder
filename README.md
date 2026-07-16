@@ -99,6 +99,28 @@ its DOI as a stable `guid`, stays unread until you read it, and reopens fine.
 persist, relevance-ranked, with a "new" badge on today's, then age out (they
 remain in Feedly). RSS stays strictly once-per-paper so Feedly isn't re-spammed.
 
+## Track citations of your own work
+
+Google Scholar has no API or RSS, and scraping it violates its terms and gets
+blocked — but OpenAlex gives you Scholar-style citation alerts for free. Add a
+`cites:` query with `always_include`, which keeps matches regardless of keyword
+score (exclusions still veto):
+
+```yaml
+openalex:
+  queries:
+    - {name: cites-me, filter: "cites:W123|W456|W789", always_include: true}
+```
+
+Find your ids via the API: `authors?search=Your+Name`, then
+`works?filter=author.id:AXXXX&sort=cited_by_count:desc`. Pick your **topically
+core** papers, not simply your most-cited — a broad, heavily-cited paper drags in
+citations from unrelated fields, and `always_include` bypasses the lexicon that
+would otherwise filter them. Papers kept this way are labelled with the query
+name so you can see why they're there. The same flag works on any `rss:` entry.
+
+`author.id:AXXXX` as a filter follows a person's new output instead.
+
 ## Customize the look
 
 The page ships with a complete, light/dark-aware design — you write no HTML or

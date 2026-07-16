@@ -30,18 +30,30 @@ from .window import add_to_window, load_window, prune_window, save_window
 log = logging.getLogger("paper_feeder")
 
 
+def _mark(records: list[Record], entry: dict) -> list[Record]:
+    """Apply a source entry's ``always_include`` flag to its records."""
+    if entry.get("always_include"):
+        for rec in records:
+            rec.always_include = True
+    return records
+
+
 def fetch_all(sources: dict, since: date) -> list[Record]:
     """Fetch every configured source, logging and skipping failures."""
     mailto = sources.get("mailto")
     records: list[Record] = []
 
     for feed in sources.get("rss", []) or []:
-        records += fetch_rss(feed["name"], feed["url"], feed.get("journal"))
+        records += _mark(
+            fetch_rss(feed["name"], feed["url"], feed.get("journal")), feed
+        )
 
     session = make_session(mailto)
     oa = sources.get("openalex", {}) or {}
     for q in oa.get("queries", []) or []:
-        records += openalex_query(session, q["name"], q["filter"], since, mailto)
+        records += _mark(
+            openalex_query(session, q["name"], q["filter"], since, mailto), q
+        )
     for issn in oa.get("issns", []) or []:
         records += openalex_issn(session, issn, since, mailto)
 
@@ -81,8 +93,8 @@ def run(
     fresh_digest: list[Record] = []
     fresh_below: list[Record] = []
     for rec in scored:
-        target = fresh_digest if (rec.score >= min_score or rec.is_editorial) else fresh_below
-        target.append(rec)
+        keep = rec.score >= min_score or rec.is_editorial or rec.always_include
+        (fresh_digest if keep else fresh_below).append(rec)
 
     fresh_digest = maybe_rerank(fresh_digest, scoring)  # no-op unless enabled
 

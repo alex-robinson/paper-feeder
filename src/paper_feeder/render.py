@@ -37,6 +37,7 @@ article h2 a { color: inherit; }
 .why { color: var(--accent); font-size: 0.85rem; }
 .score { color: var(--muted); font-variant-numeric: tabular-nums; }
 .editorial { color: #a70; }
+.pin { color: var(--accent); }
 .new { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 600;
        padding: 0.05rem 0.35rem; border-radius: 0.6rem; vertical-align: middle; }
 details summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
@@ -72,6 +73,10 @@ def _article_html(rec: Record, today: date | None = None) -> str:
         bits.append(rec.published.isoformat())
     if rec.is_editorial:
         bits.append('<span class="editorial">editorial</span>')
+    if rec.always_include:
+        # say why a paper is here when its score alone wouldn't have kept it
+        label = rec.source.split(":", 1)[-1] or "pinned"
+        bits.append(f'<span class="pin">{escape(label)}</span>')
     meta = " · ".join(bits)
     if new_badge:  # "new" sits to the right of the date, off the title line
         meta = f"{meta} {new_badge}" if meta else new_badge

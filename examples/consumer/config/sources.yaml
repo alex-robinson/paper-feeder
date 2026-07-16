@@ -53,6 +53,17 @@ openalex:
   queries:
     - {name: cryosphere, filter: "primary_topic.id:T10644"}     # Cryospheric studies and observations
     - {name: paleoclimate, filter: "primary_topic.id:T10017"}   # Geology and Paleoclimatology Research
+  # Track citations of your own work — Google-Scholar-style alerts, no scraping.
+  # Find your author id and work ids via the OpenAlex API:
+  #   https://api.openalex.org/authors?search=Your+Name
+  #   https://api.openalex.org/works?filter=author.id:AXXXXXXXX&sort=cited_by_count:desc
+  # `always_include: true` keeps these regardless of keyword score (exclusions
+  # still veto). Pick your *topically core* papers — a broad, heavily-cited
+  # paper will pull in citations from unrelated fields.
+  # - {name: cites-me, filter: "cites:W123|W456|W789", always_include: true}
+  #
+  # `always_include` also works on any rss: entry.
+
   # ISSN pulls for journals without a working RSS feed.
   issns:
     - "0022-1430"   # Journal of Glaciology

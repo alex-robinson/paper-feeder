@@ -62,3 +62,10 @@ def test_load_save_roundtrip(tmp_path):
 
 def test_load_missing_returns_empty(tmp_path):
     assert load_window(tmp_path / "nope.json") == []
+
+
+def test_always_include_round_trips():
+    r = _rec("10.1/a")
+    r.always_include = True
+    r.first_seen = date(2024, 1, 1)
+    assert from_dict(to_dict(r)).always_include is True

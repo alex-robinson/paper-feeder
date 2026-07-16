@@ -38,3 +38,13 @@ def test_dedupe_distinct_dois_kept():
     a = Record(title="T", journal="J", source="s", url="", doi="10.1/a")
     b = Record(title="T", journal="J", source="s", url="", doi="10.1/b")
     assert len(dedupe([a, b])) == 2
+
+
+def test_dedupe_preserves_always_include_from_any_copy():
+    a = Record(title="T", journal="J", source="rss:nature", url="", doi="10.1/x",
+               abstract="a")  # no flag, has abstract
+    b = Record(title="T", journal="J", source="openalex:cites-me", url="",
+               doi="10.1/x", always_include=True)
+    out = dedupe([a, b])
+    assert len(out) == 1
+    assert out[0].always_include is True  # flag survives even though a won
