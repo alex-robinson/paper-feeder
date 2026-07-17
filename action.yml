@@ -24,7 +24,10 @@ runs:
     - uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
-        cache: pip
+        # NB: no `cache: pip` here. setup-python's pip cache looks for a
+        # requirements.txt / pyproject.toml in the CONSUMER's workspace, which a
+        # site repo won't have — it errors out and fails the job. The deps are
+        # three small pure-Python packages, so caching buys ~2s anyway.
     # github.action_path is this action repo's checkout — install the package from it.
     - shell: bash
       run: pip install "${{ github.action_path }}"
