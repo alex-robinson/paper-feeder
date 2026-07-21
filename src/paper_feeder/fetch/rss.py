@@ -20,6 +20,9 @@ log = logging.getLogger("paper_feeder.rss")
 
 _TAG = re.compile(r"<[^>]+>")
 _WS = re.compile(r"\s+")
+_BR = re.compile(r"<br\s*/?>", re.I)
+# Splits an author byline ("A, B, and C" / "A and B") into individual names.
+_AUTHOR_SEP = re.compile(r",\s+and\s+|\s+and\s+|,\s+")
 
 # Some publishers (Wiley, Science, PNAS) 403 the default feedparser UA.
 _UA = (
@@ -28,14 +31,53 @@ _UA = (
 )
 
 
-def _clean_summary(text: str | None) -> str | None:
-    """RSS summaries are often HTML; reduce to collapsed plain text."""
+def _plain(text: str | None) -> str | None:
+    """Strip tags, unescape entities, collapse whitespace."""
     if not text:
         return None
     text = _html.unescape(text)  # reveal any escaped tags first
     text = _TAG.sub(" ", text)
     text = _WS.sub(" ", text).strip()
     return text or None
+
+
+def _clean_summary(text: str | None) -> str | None:
+    """RSS summaries are often HTML; reduce to collapsed plain text."""
+    return _plain(text)
+
+
+def _clean_authors(names: list[str]) -> list[str]:
+    """Normalise feedparser author names.
+
+    Some publishers (AGU/Wiley) return every author as one newline-joined
+    string; split it back out. Others give one name per entry. Either way,
+    collapse internal whitespace and drop blanks.
+    """
+    out: list[str] = []
+    for raw in names:
+        for part in _AUTHOR_SEP.split(raw or ""):
+            name = _WS.sub(" ", part).strip().strip(",")
+            if name:
+                out.append(name)
+    return out
+
+
+def _copernicus_byline(summary: str | None) -> tuple[list[str], str | None]:
+    """Copernicus feeds carry no author field; the summary HTML instead holds
+    ``<b>title</b><br/>authors<br/>citation<br/>abstract``. Recover the authors
+    and the real abstract from that layout. Returns ``([], None)`` if the
+    summary doesn't match, so callers fall back to the default handling.
+    """
+    if not summary:
+        return [], None
+    segs = [_plain(s) or "" for s in _BR.split(_html.unescape(summary))]
+    # title, authors, citation, abstract… — need the citation line to be sure
+    # this is the Copernicus layout and not some other multi-line summary.
+    if len(segs) < 4 or "doi.org/" not in segs[2]:
+        return [], None
+    authors = _clean_authors([segs[1]])
+    abstract = _plain(" ".join(segs[3:]))
+    return authors, abstract
 
 # Titles/tags that signal editorial (keep, but flag so it can bypass thresholds).
 _EDITORIAL_HINTS = (
@@ -78,7 +120,18 @@ def parse_feed(name: str, parsed, journal: str | None = None) -> list[Record]:
     feed_title = getattr(parsed.feed, "title", name) if parsed.feed else name
     records: list[Record] = []
     for entry in parsed.entries:
-        abstract = _clean_summary(entry.get("summary"))
+        summary = entry.get("summary")
+        authors = _clean_authors(
+            [a.get("name", "") for a in (entry.get("authors", []) or [])]
+        )
+        abstract = _clean_summary(summary)
+        if not authors:
+            # No author field (e.g. Copernicus): try to recover from the summary
+            # layout, which also yields a cleaner abstract than the raw blob.
+            cop_authors, cop_abstract = _copernicus_byline(summary)
+            if cop_authors:
+                authors = cop_authors
+                abstract = cop_abstract or abstract
         records.append(
             Record(
                 title=(entry.get("title") or "").strip(),
@@ -87,11 +140,7 @@ def parse_feed(name: str, parsed, journal: str | None = None) -> list[Record]:
                 url=entry.get("link", ""),
                 doi=_extract_doi(entry),
                 abstract=abstract,
-                authors=[
-                    a.get("name", "")
-                    for a in (entry.get("authors", []) or [])
-                    if a.get("name")
-                ],
+                authors=authors,
                 published=parse_date(entry.get("published_parsed")),
                 is_editorial=_is_editorial(entry),
                 abstract_missing=abstract is None,

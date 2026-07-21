@@ -98,7 +98,9 @@ fetch (RSS + OpenAlex + Crossref)
 its DOI as a stable `guid`, stays unread until you read it, and reopens fine.
 Each item carries its real authors (`dc:creator`) and journal (`<category>` plus
 a lead line in the body), so readers show the paper's authors and venue rather
-than the feed owner.
+than the feed owner. Author bylines are normalised across publishers — including
+Copernicus feeds (which hide authors in the summary layout) and AGU/Wiley (which
+pack every author into one string).
 
 **The HTML page is a rolling `window_days` (default 7) window** — matched papers
 persist, relevance-ranked, with a "new" badge on today's, then age out (they
