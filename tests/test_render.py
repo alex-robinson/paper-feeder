@@ -78,7 +78,7 @@ def test_render_html_serendipity_section():
 
 def test_render_rss_is_wellformed():
     rec = _rec(matched=["ice sheet"], abstract="An abstract.",
-               published=date(2024, 2, 1))
+               authors=["A. Robinson", "B. Smith"], published=date(2024, 2, 1))
     xml = render_rss([rec], date(2024, 2, 2), title="Paper Feeder",
                      link="https://example.org")
     root = ET.fromstring(xml)  # raises if malformed
@@ -88,7 +88,19 @@ def test_render_rss_is_wellformed():
     assert len(items) == 1
     assert items[0].find("title").text == "Ice sheet dynamics"
     assert items[0].find("guid").text == "10.1/x"
-    assert "matched: ice sheet" in items[0].find("description").text
+    desc = items[0].find("description").text
+    assert "The Cryosphere" in desc and "matched: ice sheet" in desc
+    # real per-item author (dc:creator) and journal category
+    creator = items[0].find("{http://purl.org/dc/elements/1.1/}creator")
+    assert creator.text == "A. Robinson, B. Smith"
+    assert items[0].find("category").text == "The Cryosphere"
+
+
+def test_render_rss_declares_dc_namespace():
+    rec = _rec(authors=["A. Robinson"])
+    xml = render_rss([rec], date(2024, 2, 2))
+    assert 'xmlns:dc="http://purl.org/dc/elements/1.1/"' in xml
+    assert "<dc:creator>A. Robinson</dc:creator>" in xml
 
 
 def test_render_rss_handles_special_chars():

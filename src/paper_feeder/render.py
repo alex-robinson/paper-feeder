@@ -9,9 +9,13 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from html import escape
 from xml.etree import ElementTree as ET
-from xml.sax.saxutils import escape as xml_escape
 
 from .models import Record
+
+# Dublin Core: gives each item a real author (dc:creator), so readers like
+# Feedly show the paper's authors instead of falling back to the feed owner.
+_DC = "http://purl.org/dc/elements/1.1/"
+ET.register_namespace("dc", _DC)
 
 # Themeable via CSS custom properties: a consumer can override any of these by
 # passing extra CSS (see render config), e.g. `:root { --accent: #06c; }`.
@@ -180,12 +184,19 @@ def render_rss(
         guid.set("isPermaLink", "false")
         if rec.published:
             ET.SubElement(item, "pubDate").text = _rfc822(rec.published)
-        desc_bits = []
-        if rec.matched:
-            desc_bits.append("matched: " + ", ".join(rec.matched))
-        if rec.abstract:
-            desc_bits.append(rec.abstract)
-        ET.SubElement(item, "description").text = xml_escape("\n\n".join(desc_bits))
+        # Real per-item author (readers show this instead of the feed owner),
+        # and the journal as a category tag.
+        if rec.authors:
+            ET.SubElement(item, f"{{{_DC}}}creator").text = _authors_str(rec.authors)
+        if rec.journal:
+            ET.SubElement(item, "category").text = rec.journal
+        # Lead line surfaces the journal (and match reason) in the body, so it
+        # shows even in readers that ignore <category>. ET escapes .text itself.
+        head = " — ".join(
+            p for p in (rec.journal, "matched: " + ", ".join(rec.matched) if rec.matched else "") if p
+        )
+        desc_bits = [b for b in (head, rec.abstract) if b]
+        ET.SubElement(item, "description").text = "\n\n".join(desc_bits)
 
     return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(
         rss, encoding="unicode"
